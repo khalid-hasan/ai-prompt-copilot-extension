@@ -67,7 +67,7 @@ AI Prompt Copilot transforms vague prompts into precisely engineered instruction
 
 - **Website:** https://aipromptcopilot.com
 - **Privacy Policy:** https://aipromptcopilot.com/privacy
-- **Contact:** khalidibnehasan@gmail.com
+- **Contact:** hello@aipromptcopilot.com
 
 ## License
 
