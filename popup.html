@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Prompt Copilot</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 340px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f0f14;
+      color: #e4e4e7;
+      padding: 0;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header-icon {
+      font-size: 28px;
+      margin-bottom: 4px;
+    }
+
+    .header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.3px;
+    }
+
+    .header p {
+      font-size: 11px;
+      color: rgba(255,255,255,0.8);
+      margin-top: 2px;
+    }
+
+    .content {
+      padding: 16px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .field select,
+    .field input {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 13px;
+      background: #1a1a24;
+      color: #e4e4e7;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    .field select:focus,
+    .field input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+    }
+
+    .field select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+
+    .field select:disabled,
+    .field input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .save-btn {
+      width: 100%;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .save-btn:hover {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .status {
+      text-align: center;
+      font-size: 12px;
+      margin-top: 10px;
+      min-height: 18px;
+      transition: opacity 0.3s;
+    }
+
+    .status-success { color: #34d399; }
+    .status-error { color: #f87171; }
+
+    .footer {
+      text-align: center;
+      padding: 10px 16px 14px;
+      border-top: 1px solid #1e1e28;
+    }
+
+    .footer p {
+      font-size: 10px;
+      color: #52525b;
+    }
+
+    .key-hint {
+      font-size: 11px;
+      color: #71717a;
+      margin-top: 4px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      background: #1a1a24;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      position: relative;
+    }
+
+    .toggle-row.locked {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .toggle-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .toggle-label-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e4e4e7;
+    }
+
+    .toggle-hint {
+      font-size: 11px;
+      color: #71717a;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #27272a;
+      border-radius: 22px;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 3px;
+      bottom: 3px;
+      background: #e4e4e7;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    }
+
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(18px);
+    }
+
+    /* Pro Badge */
+    .pro-badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      padding: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .lock-icon {
+      font-size: 12px;
+      margin-left: 4px;
+    }
+
+    /* Tabs */
+    .tab-nav {
+      display: flex;
+      border-bottom: 1px solid #27272a;
+      background: #13131a;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #71717a;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: #a1a1aa;
+    }
+
+    .tab-btn.active {
+      color: #a78bfa;
+      border-bottom-color: #a78bfa;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* History */
+    .history-empty {
+      text-align: center;
+      padding: 32px 16px;
+      color: #52525b;
+      font-size: 12px;
+    }
+
+    .history-locked {
+      text-align: center;
+      padding: 32px 16px;
+      color: #52525b;
+      font-size: 12px;
+    }
+
+    .history-locked .lock-icon-large {
+      font-size: 32px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .history-list {
+      max-height: 340px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      padding: 10px 16px;
+      border-bottom: 1px solid #1e1e28;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .history-item:hover {
+      background: #1a1a24;
+    }
+
+    .history-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .history-item-meta {
+      font-size: 10px;
+      color: #52525b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .history-item-mode {
+      font-size: 9px;
+      font-weight: 600;
+      color: #a78bfa;
+      text-transform: uppercase;
+    }
+
+    .history-item-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .history-action-btn {
+      background: none;
+      border: none;
+      color: #52525b;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .history-action-btn:hover {
+      color: #e4e4e7;
+      background: #27272a;
+    }
+
+    .history-action-btn.pinned {
+      color: #f59e0b;
+    }
+
+    .history-item-original {
+      font-size: 11px;
+      color: #71717a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .history-item-improved {
+      font-size: 12px;
+      color: #e4e4e7;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Trial Banner */
+    .trial-banner {
+      display: none;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .trial-banner.visible {
+      display: block;
+    }
+
+    .trial-banner-text {
+      font-size: 12px;
+      color: #a78bfa;
+      font-weight: 600;
+    }
+
+    .trial-banner-sub {
+      font-size: 10px;
+      color: #71717a;
+      margin-top: 2px;
+    }
+
+    /* Pro Banner */
+    .pro-banner {
+      display: none;
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1));
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .pro-banner.visible {
+      display: block;
+    }
+
+    .pro-banner-text {
+      font-size: 12px;
+      color: #34d399;
+      font-weight: 600;
+    }
+
+    /* Plan Indicator */
+    .plan-indicator {
+      text-align: center;
+      padding: 10px 16px;
+      border-top: 1px solid #1e1e28;
+    }
+
+    .plan-indicator-text {
+      font-size: 11px;
+      color: #52525b;
+      margin-bottom: 6px;
+    }
+
+    .plan-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .plan-btn {
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .plan-btn-trial {
+      color: #fff;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    }
+
+    .plan-btn-trial:hover {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    }
+
+    .plan-btn-upgrade {
+      color: #a78bfa;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .plan-btn-upgrade:hover {
+      background: rgba(139, 92, 246, 0.2);
+    }
+
+    .plan-btn-manage {
+      color: #34d399;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .plan-btn-manage:hover {
+      background: rgba(34, 197, 94, 0.2);
+    }
+
+    /* Pricing Toggle */
+    .pricing-toggle {
+      display: none;
+      margin-bottom: 8px;
+      justify-content: center;
+      gap: 0;
+    }
+
+    .pricing-toggle.visible {
+      display: flex;
+    }
+
+    .pricing-option {
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #27272a;
+      background: #1a1a24;
+      color: #71717a;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .pricing-option:first-child {
+      border-radius: 6px 0 0 6px;
+    }
+
+    .pricing-option:last-child {
+      border-radius: 0 6px 6px 0;
+    }
+
+    .pricing-option.active {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+      border-color: #6366f1;
+    }
+
+    .pricing-option .save-tag {
+      font-size: 9px;
+      color: #34d399;
+      margin-left: 4px;
+    }
+
+    /* Platform API notice for Pro/Trial */
+    .platform-api-notice {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(16, 185, 129, 0.08));
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .platform-api-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: #34d399;
+    }
+
+    .platform-api-sub {
+      font-size: 10px;
+      color: #71717a;
+      margin-top: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-icon">&#10024;</div>
+    <h1>AI Prompt Copilot</h1>
+    <p>Improve your prompts with one click</p>
+  </div>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="settings">Settings</button>
+    <button class="tab-btn" data-tab="history">History <span class="pro-badge">PRO</span></button>
+  </div>
+
+  <div class="tab-content active" id="tab-settings">
+    <div class="content">
+      <!-- Trial Banner -->
+      <div class="trial-banner" id="trialBanner">
+        <div class="trial-banner-text" id="trialBannerText">Trial: 7 days remaining</div>
+        <div class="trial-banner-sub">Upgrade to keep Pro features after trial ends</div>
+      </div>
+
+      <!-- Pro Banner -->
+      <div class="pro-banner" id="proBanner">
+        <div class="pro-banner-text">Pro Plan Active</div>
+      </div>
+
+      <!-- Platform API notice for Pro/Trial users -->
+      <div class="platform-api-notice" id="platformApiNotice" style="display: none;">
+        <div class="platform-api-text">Platform API active — no API key needed</div>
+        <div class="platform-api-sub">Powered by Gemini 3.1 Flash Lite</div>
+      </div>
+
+      <!-- BYOK fields for Free users -->
+      <div id="byokFields">
+        <div class="field">
+          <label>AI Provider</label>
+          <select id="provider">
+            <option value="openai">OpenAI (GPT-4o mini)</option>
+            <option value="anthropic">Anthropic (Claude 3.5 Haiku)</option>
+            <option value="gemini">Google Gemini (2.0 Flash)</option>
+            <option value="grok">xAI Grok (Grok 3 Mini Fast)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>API Key</label>
+          <input type="password" id="apiKey" placeholder="Enter your API key...">
+          <p class="key-hint">Your key is stored locally and never sent to third parties.</p>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-label-text">Show Preview</span>
+          <span class="toggle-hint">Preview improved prompt before applying</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="showPreview">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row" id="deepToggleRow">
+        <div class="toggle-label">
+          <span class="toggle-label-text">Deep Optimization <span class="pro-badge">PRO</span></span>
+          <span class="toggle-hint">3-step analyze &rarr; improve &rarr; refine (uses 3 API calls)</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="deepOptimization">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="field" id="promptModeField">
+        <label>Prompt Mode <span class="pro-badge">PRO</span></label>
+        <select id="promptMode">
+          <option value="general">General</option>
+          <option value="research">Research (PRO)</option>
+          <option value="coding">Coding (PRO)</option>
+          <option value="writing">Writing (PRO)</option>
+          <option value="creative">Creative (PRO)</option>
+          <option value="business">Business (PRO)</option>
+          <option value="marketing">Marketing (PRO)</option>
+          <option value="data">Data & Analysis (PRO)</option>
+          <option value="learning">Learning (PRO)</option>
+        </select>
+      </div>
+
+      <button class="save-btn" id="saveBtn">Save Settings</button>
+
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-history">
+    <div id="historyContainer">
+      <div class="history-empty">No prompt history yet. Improve a prompt to get started!</div>
+    </div>
+  </div>
+
+  <div class="plan-indicator" id="planIndicator">
+    <div class="plan-indicator-text" id="planText">Free Plan</div>
+    <div class="pricing-toggle" id="pricingToggle">
+      <button class="pricing-option active" data-billing="monthly">$6.99/mo</button>
+      <button class="pricing-option" data-billing="annual">$59.99/yr <span class="save-tag">Save 29%</span></button>
+    </div>
+    <div class="plan-actions" id="planActions">
+      <button class="plan-btn plan-btn-trial" id="startTrialBtn">Start 7-Day Free Trial</button>
+      <button class="plan-btn plan-btn-upgrade" id="upgradeBtn">Upgrade to Pro</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Works on ChatGPT, Claude, Gemini, and Grok</p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
