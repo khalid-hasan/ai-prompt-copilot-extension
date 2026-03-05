@@ -134,6 +134,26 @@ Process:
 2. Fix those weaknesses
 3. Return ONLY the final refined prompt text — no commentary, labels, or quotation marks`;
 
+const FOLLOW_UP_SYSTEM_PROMPT = `You are a world-class prompt engineer. The user is in an ongoing AI conversation and is writing a follow-up message. The AI they are talking to already has full context from earlier messages.
+
+Your job is to improve their follow-up prompt WITHOUT:
+- Adding role assignments (e.g., "You are a senior developer...") — the AI already knows its role
+- Repeating context that was established earlier in the conversation
+- Adding background information the AI already has
+- Over-expanding a simple follow-up into a standalone essay
+
+Instead, focus on:
+- Making the follow-up request crystal clear and unambiguous
+- Adding specificity to vague requests (what exactly should change, what format, what constraints)
+- Resolving pronoun ambiguity — if the user says "it" or "that", make clear what they're referring to
+- Adding success criteria when the expected outcome is unclear
+- Structuring multi-part requests so nothing gets missed
+- Keeping the natural conversational flow — this should feel like a skilled human's follow-up, not a formal prompt
+
+Keep simple follow-ups simple. "Can you make it shorter?" might just need "Can you condense that to under 200 words while keeping the key points?" — not a 10-line prompt.
+
+Return ONLY the improved follow-up prompt text with no commentary, labels, preamble, or quotation marks.`;
+
 const MODE_PROMPTS = {
   general: "",
   research: `
@@ -386,7 +406,7 @@ async function incrementDailyDeepCount() {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "improvePrompt") {
-    handleImprovePrompt(request.prompt, request.promptMode || "general", request.platform || null)
+    handleImprovePrompt(request.prompt, request.promptMode || "general", request.platform || null, request.conversationHistory || [])
       .then((result) => sendResponse(result))
       .catch((error) => sendResponse({ error: error.message }));
     return true;
@@ -598,10 +618,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Core Prompt Logic
 // =============================================================================
 
-function getSystemPromptWithMode(mode, platform) {
+function isFollowUp(conversationHistory) {
+  return conversationHistory && conversationHistory.length > 0;
+}
+
+function getSystemPromptWithMode(mode, platform, conversationHistory) {
+  const basePrompt = isFollowUp(conversationHistory) ? FOLLOW_UP_SYSTEM_PROMPT : SYSTEM_PROMPT;
   const modeSuffix = MODE_PROMPTS[mode] || "";
   const platformSuffix = (platform && PLATFORM_HINTS[platform]) || "";
-  return SYSTEM_PROMPT + modeSuffix + platformSuffix;
+  return basePrompt + modeSuffix + platformSuffix;
 }
 
 async function getProviderAndKey() {
@@ -640,7 +665,7 @@ async function savePromptHistory(entry) {
   });
 }
 
-async function handleImprovePrompt(userPrompt, mode, platform) {
+async function handleImprovePrompt(userPrompt, mode, platform, conversationHistory) {
   const license = await checkLicense();
 
   // Gate non-general modes for free users
@@ -653,7 +678,7 @@ async function handleImprovePrompt(userPrompt, mode, platform) {
 
     if (license.plan === "trial" || license.plan === "pro") {
       // Pro/Trial: use server-side platform API (no user key needed)
-      result = await callServerImprove(userPrompt, mode, platform);
+      result = await callServerImprove(userPrompt, mode, platform, conversationHistory);
     } else {
       // Free: use user's own API key (BYOK)
       const { apiKey, provider } = await getProviderAndKey();
@@ -664,7 +689,7 @@ async function handleImprovePrompt(userPrompt, mode, platform) {
       if (!callProvider) {
         return { error: `Unknown provider: ${provider}` };
       }
-      const systemPrompt = getSystemPromptWithMode(mode, platform);
+      const systemPrompt = getSystemPromptWithMode(mode, platform, conversationHistory);
       result = await callProvider(apiKey, userPrompt, systemPrompt);
     }
 
@@ -740,7 +765,7 @@ async function handleDeepImprovePrompt(userPrompt, mode, conversationHistory, pl
 // Server-Side Platform API (Pro/Trial users — no API key needed)
 // =============================================================================
 
-async function callServerImprove(userPrompt, mode, platform) {
+async function callServerImprove(userPrompt, mode, platform, conversationHistory) {
   const extensionUserId = await getOrCreateUserId();
   const response = await fetchWithTimeout(`${SERVER_URL}/api/improve`, {
     method: "POST",
@@ -750,6 +775,7 @@ async function callServerImprove(userPrompt, mode, platform) {
       prompt: userPrompt,
       promptMode: mode || "general",
       platform: platform || null,
+      conversationHistory: conversationHistory || [],
     }),
   });
 

@@ -643,8 +643,8 @@
     }, PROCESSING_TIMEOUT_MS);
 
     try {
-      // Extract conversation context for deep optimization
-      const conversationHistory = isDeep ? extractConversationHistory() : [];
+      // Extract conversation context for follow-up detection and deep optimization
+      const conversationHistory = extractConversationHistory();
 
       const response = await chrome.runtime.sendMessage({
         action: isDeep ? "deepImprovePrompt" : "improvePrompt",
