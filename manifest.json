@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Prompt Copilot — Better Prompts, Better AI",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "One-click prompt improvement for ChatGPT, Claude, Gemini & Grok. Deep optimization, 9 modes, prompt history.",
   "permissions": ["storage"],
   "host_permissions": [
