@@ -3,7 +3,7 @@
   "name": "AI Prompt Copilot — Better Prompts, Better AI",
   "version": "2.0.0",
   "description": "One-click prompt improvement for ChatGPT, Claude, Gemini & Grok. Deep optimization, 9 modes, prompt history.",
-  "permissions": ["activeTab", "storage"],
+  "permissions": ["storage"],
   "host_permissions": [
     "https://chat.openai.com/*",
     "https://chatgpt.com/*",
